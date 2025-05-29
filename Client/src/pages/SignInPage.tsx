@@ -10,7 +10,7 @@ import axios from "axios";
 import { BACKEND_URL } from "@/lib/config";
 
 export default function SignInPage() {
-  const [email, setEmail] = useState("");
+  const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
@@ -21,17 +21,18 @@ export default function SignInPage() {
 
     try {
       // Simulate API call
-      await new Promise((resolve) => setTimeout(resolve, 1500));
-      const response = await axios.post(`${BACKEND_URL}/user/signin`, {
-        email,
+      // await new Promise((resolve) => setTimeout(resolve, 1500));
+      console.log(username,password)
+      const response = await axios.post(`${BACKEND_URL}/api/auth/signin`, {
+        username,
         password,
       });
-
+console.log(response)
       if (response.data) {
         // Mock successful login
         localStorage.setItem("token", response.data.token);
         toast.success("Successfully signed in!");
-        navigate("/dashboard");
+        navigate("/");
       }
     } catch (error) {
       console.log(error);
@@ -62,8 +63,8 @@ export default function SignInPage() {
                   type="email"
                   placeholder="you@example.com"
                   className="border-gray-700 bg-muted text-white placeholder-gray-400"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
+                  value={username}
+                  onChange={(e) => setUsername(e.target.value)}
                   required
                 />
               </div>
