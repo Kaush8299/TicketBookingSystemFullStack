@@ -21,7 +21,7 @@ export default function SignUpPage() {
     setIsLoading(true);
 
     try {
-      const response = await axios.post(`${BACKEND_URL}/users/signup`, {
+      const response = await axios.post(`${BACKEND_URL}/user/signup`, {
         name,
         email,
         mobile,

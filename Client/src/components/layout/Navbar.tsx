@@ -49,7 +49,7 @@ const Navbar = () => {
           >
             Home
           </Link>
-          <Link
+          {/*<Link
             to="/movies"
             className={`text-sm font-medium transition-colors ${
               location.pathname.includes("/movies")
@@ -68,14 +68,14 @@ const Navbar = () => {
             }`}
           >
             Coming Soon
-          </Link>
+          </Link> 
           <Button
             variant="ghost"
             size="icon"
             className="text-gray-300 hover:text-white"
           >
             <Search className="h-5 w-5" />
-          </Button>
+          </Button> */}
         </div>
 
         <div className="flex items-center gap-2">
