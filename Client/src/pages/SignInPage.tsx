@@ -21,13 +21,10 @@ export default function SignInPage() {
 
     try {
       // Simulate API call
-      // await new Promise((resolve) => setTimeout(resolve, 1500));
-      console.log(username,password)
       const response = await axios.post(`${BACKEND_URL}/api/auth/signin`, {
         username,
         password,
       });
-console.log(response)
       if (response.data) {
         // Mock successful login
         localStorage.setItem("token", response.data.token);

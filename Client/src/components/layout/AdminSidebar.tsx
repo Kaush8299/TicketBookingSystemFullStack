@@ -35,7 +35,6 @@ const secondaryNav: NavItem[] = [
 export default function AdminSidebar() {
   const [collapsed, setCollapsed] = useState(false);
   const location = useLocation();
-  console.log(location);
   const toggleSidebar = () => {
     setCollapsed(!collapsed);
   };

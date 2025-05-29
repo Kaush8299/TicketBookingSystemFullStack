@@ -67,7 +67,24 @@ export function MovieCard({
                 variant="outline"
                 className="bg-white/10 text-white hover:bg-white/20"
               >
-                <Link to={`/movies/${id}`}>Details</Link>
+                <Link
+                  to={`/movies/${id}`}
+                  state={{
+                    movie: {
+                      id,
+                      title,
+                      description: description || "",
+                      posterUrl,
+                      backdrop_path: backdrop_path || "",
+                      rating,
+                      runtime,
+                      releaseDate,
+                      isUpcoming: true,
+                    },
+                  }}
+                >
+                  Details
+                </Link>
               </Button>
             </div>
           ) : (
@@ -90,6 +107,7 @@ export function MovieCard({
                       rating,
                       runtime,
                       releaseDate,
+                      isUpcoming: false,
                     },
                   }}
                 >
