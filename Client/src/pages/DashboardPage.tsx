@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Layout from "@/components/layout/Layout";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
@@ -15,6 +15,14 @@ import {
   MapPin,
   Ticket as TicketIcon,
 } from "lucide-react";
+import { Link, useLocation, useNavigate } from "react-router-dom";
+import { useToast } from "@/components/ui/use-toast";
+
+interface Movie {
+  id: string;
+  title: string;
+  posterUrl: string;
+}
 
 interface Ticket {
   id: string;
@@ -28,69 +36,103 @@ interface Ticket {
   isPast: boolean;
 }
 
-const userTickets: Ticket[] = [
-  {
-    id: "t1",
-    movieTitle: "Inception",
-    posterUrl:
-      "https://image.tmdb.org/t/p/w500/9gk7adHYeDvHkCSEqAvQNLV5Uge.jpg",
-    date: "2024-04-15",
-    time: "19:30",
-    theater: "CineTicket IMAX - Screen 1",
-    seats: ["F5", "F6"],
-    price: 32.98,
-    isPast: false,
-  },
-  {
-    id: "t2",
-    movieTitle: "The Dark Knight",
-    posterUrl:
-      "https://image.tmdb.org/t/p/w500/qJ2tW6WMUDux911r6m7haRef0WH.jpg",
-    date: "2024-04-20",
-    time: "20:00",
-    theater: "CineTicket Premium - Screen 3",
-    seats: ["D12", "D13", "D14"],
-    price: 47.97,
-    isPast: false,
-  },
-  {
-    id: "t3",
-    movieTitle: "Pulp Fiction",
-    posterUrl:
-      "https://image.tmdb.org/t/p/w500/d5iIlFn5s0ImszYzBPb8JPIfbXD.jpg",
-    date: "2024-03-10",
-    time: "18:45",
-    theater: "CineTicket Standard - Screen 5",
-    seats: ["H8"],
-    price: 12.99,
-    isPast: true,
-  },
-  {
-    id: "t4",
-    movieTitle: "The Matrix",
-    posterUrl:
-      "https://image.tmdb.org/t/p/w500/f89U3ADr1oiB1s9GkdPOEpXUk5H.jpg",
-    date: "2024-03-05",
-    time: "21:15",
-    theater: "CineTicket IMAX - Screen 1",
-    seats: ["C4", "C5"],
-    price: 32.98,
-    isPast: true,
-  },
-];
-
 export default function DashboardPage() {
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const { state } = useLocation();
+  const navigate = useNavigate();
+  const { toast } = useToast();
   const [activeTab, setActiveTab] = useState("upcoming");
+  const [tickets, setTickets] = useState<Ticket[]>(() => {
+    // Load tickets from localStorage or use default ones
+    const savedTickets = localStorage.getItem("tickets");
+    return savedTickets
+      ? JSON.parse(savedTickets)
+      : [
+          {
+            id: "t1",
+            movieTitle: "Inception",
+            posterUrl:
+              "https://image.tmdb.org/t/p/w500/9gk7adHYeDvHkCSEqAvQNLV5Uge.jpg",
+            date: "2024-04-15",
+            time: "19:30",
+            theater: "CineTicket IMAX - Screen 1",
+            seats: ["F5", "F6"],
+            price: 32.98,
+            isPast: false,
+          },
+          {
+            id: "t2",
+            movieTitle: "The Dark Knight",
+            posterUrl:
+              "https://image.tmdb.org/t/p/w500/qJ2tW6WMUDux911r6m7haRef0WH.jpg",
+            date: "2024-04-20",
+            time: "20:00",
+            theater: "CineTicket Premium - Screen 3",
+            seats: ["D12", "D13", "D14"],
+            price: 47.97,
+            isPast: false,
+          },
+          {
+            id: "t3",
+            movieTitle: "Pulp Fiction",
+            posterUrl:
+              "https://image.tmdb.org/t/p/w500/d5iIlFn5s0ImszYzBPb8JPIfbXD.jpg",
+            date: "2024-03-10",
+            time: "18:45",
+            theater: "CineTicket Standard - Screen 5",
+            seats: ["H8"],
+            price: 12.99,
+            isPast: true,
+          },
+        ];
+  });
 
-  const upcomingTickets = userTickets.filter((ticket) => !ticket.isPast);
-  const pastTickets = userTickets.filter((ticket) => ticket.isPast);
+  // Handle new ticket from booking
+  useEffect(() => {
+    if (state?.movie && state?.showtime && state?.seats) {
+      const newTicket: Ticket = {
+        id: `t${Date.now()}`,
+        movieTitle: state.movie.title,
+        posterUrl: state.movie.posterUrl,
+        date: new Date().toISOString().split("T")[0],
+        time: state.showtime,
+        theater: "CineTicket Standard - Screen 1",
+        seats: state.seats,
+        price: state.seats.length * 300,
+        isPast: false,
+      };
+
+      const updatedTickets = [...tickets, newTicket];
+      setTickets(updatedTickets);
+      localStorage.setItem("tickets", JSON.stringify(updatedTickets));
+
+      // Clear navigation state
+      navigate(".", { state: {}, replace: true });
+
+      toast({
+        title: "Booking Confirmed!",
+        description: `Your tickets for ${state.movie.title} have been added.`,
+      });
+    }
+  }, [state, navigate, toast, tickets]);
+
+  const upcomingTickets = tickets.filter((ticket) => !ticket.isPast);
+  const pastTickets = tickets.filter((ticket) => ticket.isPast);
 
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString("en-US", {
       weekday: "short",
       month: "short",
       day: "numeric",
+    });
+  };
+
+  const markTicketAsPast = (ticketId: string) => {
+    setTickets((prevTickets) => {
+      const updated = prevTickets.map((ticket) =>
+        ticket.id === ticketId ? { ...ticket, isPast: true } : ticket
+      );
+      localStorage.setItem("tickets", JSON.stringify(updated));
+      return updated;
     });
   };
 
@@ -191,15 +233,24 @@ export default function DashboardPage() {
                                 Total paid
                               </span>
                               <span className="text-lg font-bold text-white">
-                                ${ticket.price.toFixed(2)}
+                                ₹{ticket.price.toFixed(2)}
                               </span>
                             </div>
-                            <Button
-                              variant="outline"
-                              className="border-cinema-gold/30 bg-cinema-gold/10 text-cinema-gold hover:bg-cinema-gold/20 hover:text-cinema-gold"
-                            >
-                              View E-Ticket
-                            </Button>
+                            <div className="flex gap-2">
+                              <Button
+                                variant="outline"
+                                className="border-gray-700 bg-muted/80 hover:bg-muted"
+                                onClick={() => markTicketAsPast(ticket.id)}
+                              >
+                                Mark as Watched
+                              </Button>
+                              <Button
+                                variant="outline"
+                                className="border-cinema-gold/30 bg-cinema-gold/10 text-cinema-gold hover:bg-cinema-gold/20 hover:text-cinema-gold"
+                              >
+                                View Ticket
+                              </Button>
+                            </div>
                           </div>
                         </CardContent>
                       </div>
@@ -222,7 +273,7 @@ export default function DashboardPage() {
                   asChild
                   className="bg-cinema-red hover:bg-cinema-red/90"
                 >
-                  <a href="/">Browse Movies</a>
+                  <Link to="/">Browse Movies</Link>
                 </Button>
               </div>
             )}
@@ -291,7 +342,7 @@ export default function DashboardPage() {
                                 Total paid
                               </span>
                               <span className="text-lg font-bold text-white">
-                                ${ticket.price.toFixed(2)}
+                                ₹{ticket.price.toFixed(2)}
                               </span>
                             </div>
                             <Button

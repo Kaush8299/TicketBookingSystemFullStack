@@ -196,12 +196,7 @@ export default function LandingPage() {
         setNowPlaying(nowPlayingResults);
         setUpcomingMovies(upcomingResults);
 
-        console.log("Now Playing Movies:", nowPlayingResults);
-        console.log("Upcoming Movies:", upcomingResults);
-
         if (nowPlayingResults.length > 0) {
-          console.log("Now Playing Movies:", nowPlaying);
-          console.log("Upcoming Movies:", upcomingMovies);
           const randomNumber = Math.floor(
             Math.random() * nowPlayingResults.length
           );
@@ -254,7 +249,7 @@ export default function LandingPage() {
               asChild
               className="gap-2 bg-cinema-red hover:bg-cinema-red/90"
             >
-              <Link to="/movies/1/book">
+              <Link to={`/movies/${homeMovie?.id}/book`}>
                 <Ticket className="h-4 w-4" />
                 Book Tickets
               </Link>
@@ -344,8 +339,11 @@ export default function LandingPage() {
                     <MovieCard
                       id={movie.id}
                       title={movie.title}
+                      description={movie.description ?? ""}
+                      backdrop_path={movie.backdrop_path}
                       posterUrl={movie.posterUrl}
                       rating={movie.rating}
+                      runtime={movie.runtime}
                       releaseDate={movie.release_date}
                       isUpcoming={true}
                     />

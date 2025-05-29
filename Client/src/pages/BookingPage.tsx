@@ -4,6 +4,7 @@ import {
   useSearchParams,
   useNavigate,
   useLocation,
+  Link,
 } from "react-router-dom";
 import Layout from "@/components/layout/Layout";
 import { Button } from "@/components/ui/button";
@@ -17,6 +18,28 @@ import {
 } from "@/components/ui/dialog";
 import { useToast } from "@/components/ui/use-toast";
 import { AlertCircle, Check, Info, Ticket } from "lucide-react";
+import { API_KEY_TMDB } from "@/lib/config";
+
+interface Movie {
+  id: string;
+  title: string;
+  posterUrl: string;
+  backdrop_path?: string;
+  rating?: number;
+  runtime?: number;
+}
+
+interface BookingLocationState {
+  movie: Movie;
+  selectedShowtime?: string;
+}
+
+interface Seat {
+  id: string;
+  row: string;
+  number: number;
+  type: "available" | "selected" | "reserved";
+}
 
 const seatTypes = {
   available:
@@ -25,10 +48,10 @@ const seatTypes = {
   reserved: "bg-gray-700 border-gray-600 opacity-50 cursor-not-allowed",
 };
 
-const generateSeats = () => {
+const generateSeats = (): Seat[] => {
   const rows = ["A", "B", "C", "D", "E", "F", "G", "H"];
   const seatsPerRow = 10;
-  const seats = [];
+  const seats: Seat[] = [];
 
   for (const row of rows) {
     for (let seatNum = 1; seatNum <= seatsPerRow; seatNum++) {
@@ -52,53 +75,139 @@ export default function BookingPage() {
   const showtime = searchParams.get("time");
   const navigate = useNavigate();
   const { toast } = useToast();
-  const { state } = useLocation();
-  const currentMovie = state?.movie;
+  const { state } = useLocation() as { state: BookingLocationState };
   const price = 300;
 
-  const [seats, setSeats] = useState<
-    Array<{
-      id: string;
-      row: string;
-      number: number;
-      type: keyof typeof seatTypes;
-    }>
-  >([]);
+  const [seats, setSeats] = useState<Seat[]>([]);
   const [selectedSeats, setSelectedSeats] = useState<string[]>([]);
   const [isConfirmDialogOpen, setIsConfirmDialogOpen] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isValid, setIsValid] = useState(false);
 
-  // Get the movie data
-  // const movie = id ? movieData[id as keyof typeof movieData] : null;
+  const [movie, setMovie] = useState<Movie | null>(
+    state?.movie ||
+      JSON.parse(localStorage.getItem("currentBooking") || "null")?.movie
+  );
 
-  // Initialize seats on component mount
+  useEffect(() => {
+    // Check authentication
+    console.log("Checking authentication...", id);
+
+    const token = localStorage.getItem("token");
+    if (!token) {
+      navigate("/signin", {
+        state: {
+          from: `/movies/${id}/book`,
+          message: "Please login to continue booking",
+        },
+        replace: true,
+      });
+      toast({
+        title: "Authentication Required",
+        description: "You need to login to book tickets",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // Check if coming from proper flow (has movie data)
+    // if (!movie && id) {
+    //   // Fetch movie details if not already available
+    //   const fetchMovie = async (movieId: string) => {
+    //     try {
+    //       const url = `https://api.themoviedb.org/3/movie/${movieId}?language=en-US`;
+    //       const options = {
+    //         method: "GET",
+    //         headers: {
+    //           accept: "application/json",
+    //           Authorization: `Bearer ${API_KEY_TMDB}`,
+    //         },
+    //       };
+
+    //       fetch(url, options)
+    //         .then((res) => res.json())
+    //         .then((json) => console.log(json));
+    //     } catch (error) {
+    //       console.error("Failed to fetch movie:", error);
+    //       toast({
+    //         title: "Error",
+    //         description: "Failed to load movie details",
+    //         variant: "destructive",
+    //       });
+    //       navigate("/", { replace: true });
+    //     }
+    //   };
+    //   fetchMovie(id);
+    //   // .then((data) => {
+    //   //   console.log("Fetched movie data:", data);
+    //   //   data.setMovie(data);
+    //   //   localStorage.setItem(
+    //   //     "currentBooking",
+    //   //     JSON.stringify({
+    //   //       movie: data,
+    //   //       showtime: searchParams.get("time"),
+    //   //     })
+    //   // );
+    //   // });
+    // }
+
+    const showtime = searchParams.get("time");
+    const movieData =
+      state?.movie ||
+      JSON.parse(localStorage.getItem("currentBooking") || "null");
+
+    if (!movieData || !showtime) {
+      // If we're missing critical data but have an ID, redirect to movie page
+      if (id) {
+        navigate(`/movies/${id}`, { replace: true });
+        toast({
+          title: "Complete your booking",
+          description: "Please select a showtime first",
+          variant: "destructive",
+        });
+      } else {
+        // If we don't even have a movie ID, go home
+        navigate("/", { replace: true });
+      }
+      return;
+    }
+
+    localStorage.setItem(
+      "currentBooking",
+      JSON.stringify({ movie: movieData, showtime })
+    );
+    setIsValid(true);
+
+    setIsLoading(false);
+  }, [id, state, searchParams, navigate, toast]);
+
+  // Initialize seats
   useEffect(() => {
     setSeats(generateSeats());
   }, []);
 
-  // Handle seat selection
-  const handleSeatClick = (seatId: string, type: string) => {
-    if (type === "reserved") return;
+  const handleSeatClick = (seatId: string, currentType: Seat["type"]) => {
+    if (currentType === "reserved") return;
 
-    setSeats(
-      seats.map((seat) => {
-        if (seat.id === seatId) {
-          const newType = seat.type === "available" ? "selected" : "available";
-          return { ...seat, type: newType as keyof typeof seatTypes };
-        }
-        return seat;
-      })
+    setSeats((prevSeats) =>
+      prevSeats.map((seat) =>
+        seat.id === seatId
+          ? {
+              ...seat,
+              type: seat.type === "available" ? "selected" : "available",
+            }
+          : seat
+      )
     );
 
     setSelectedSeats((prev) => {
-      const isSelected = prev.includes(seatId);
-      if (isSelected) {
+      if (prev.includes(seatId)) {
         return prev.filter((id) => id !== seatId);
       } else {
-        // Check if adding this seat would exceed the maximum allowed (10)
         if (prev.length >= 10) {
           toast({
             title: "Maximum seats reached",
-            description: "You can select a maximum of 10 seats.",
+            description: "You can select up to 10 seats.",
             variant: "destructive",
           });
           return prev;
@@ -108,8 +217,33 @@ export default function BookingPage() {
     });
   };
 
-  // Group seats by row
-  const seatsByRow = seats.reduce<Record<string, typeof seats>>((acc, seat) => {
+  const handleConfirmBooking = () => {
+    if (!state?.movie || !showtime || selectedSeats.length === 0) return;
+
+    const booking = {
+      movie: state.movie,
+      showtime,
+      seats: selectedSeats,
+      totalPrice: selectedSeats.length * price,
+      bookingDate: new Date().toISOString(),
+    };
+
+    // Save to localStorage (in a real app, send to backend)
+    const bookings = JSON.parse(localStorage.getItem("bookings") || "[]");
+    localStorage.setItem("bookings", JSON.stringify([...bookings, booking]));
+
+    // Clear current booking from localStorage
+    localStorage.removeItem("currentBooking");
+
+    toast({
+      title: "Booking confirmed!",
+      description: `Enjoy ${state.movie.title} at ${showtime}`,
+    });
+
+    navigate("/dashboard", { state: booking });
+  };
+
+  const seatsByRow = seats.reduce<Record<string, Seat[]>>((acc, seat) => {
     if (!acc[seat.row]) {
       acc[seat.row] = [];
     }
@@ -117,51 +251,29 @@ export default function BookingPage() {
     return acc;
   }, {});
 
-  // Calculate total price
-  const totalPrice = selectedSeats.length * (price || 0);
+  const totalPrice = selectedSeats.length * price;
 
-  // Handle booking confirmation
-  const handleConfirmBooking = () => {
-    // In a real app, you would send the booking to your backend here
-    toast({
-      title: "Booking successful!",
-      description: `You have booked ${selectedSeats.length} seat(s) for ${currentMovie?.title} at ${showtime}.`,
-      variant: "default",
-    });
-
-    // Navigate to dashboard
-    navigate("/dashboard");
-  };
-
-  // If movie not found
-  // if (!movie) {
-  //   return (
-  //     <Layout>
-  //       <div className="container py-20 text-center">
-  //         <h1 className="mb-4 text-4xl font-bold text-cinema-red">
-  //           Movie Not Found
-  //         </h1>
-  //         <p className="mb-8 text-lg text-gray-300">
-  //           The movie you're looking for doesn't exist.
-  //         </p>
-  //         <Button asChild>
-  //           <a href="/">Back to Home</a>
-  //         </Button>
-  //       </div>
-  //     </Layout>
-  //   );
-  // }
+  if (isLoading || !state?.movie || !showtime) {
+    return (
+      <Layout>
+        <div className="container py-20 text-center">
+          <h1 className="mb-4 text-4xl font-bold text-cinema-red">
+            Loading booking information...
+          </h1>
+        </div>
+      </Layout>
+    );
+  }
 
   return (
     <Layout>
       <section className="bg-cinema-dark py-8">
         <div className="container">
           <h1 className="mb-2 text-3xl font-bold text-white">
-            {currentMovie?.title}
+            {state.movie.title}
           </h1>
           <p className="mb-8 text-gray-300">{showtime} • Select your seats</p>
 
-          {/* Information Alert */}
           <Alert className="mb-8 border-cinema-gold/30 bg-cinema-gold/10 text-cinema-gold">
             <Info className="h-4 w-4" />
             <AlertDescription>
@@ -216,6 +328,7 @@ export default function BookingPage() {
                         }`}
                         onClick={() => handleSeatClick(seat.id, seat.type)}
                         disabled={seat.type === "reserved"}
+                        aria-label={`Seat ${seat.id} - ${seat.type}`}
                       >
                         {seat.number}
                       </button>
@@ -286,12 +399,12 @@ export default function BookingPage() {
           <div className="space-y-4 py-4">
             <div className="flex items-start gap-4">
               <img
-                src={currentMovie?.posterUrl}
-                alt={currentMovie?.title}
+                src={state.movie.posterUrl}
+                alt={state.movie.title}
                 className="h-20 w-16 rounded object-cover"
               />
               <div>
-                <h4 className="font-semibold">{currentMovie?.title}</h4>
+                <h4 className="font-semibold">{state.movie.title}</h4>
                 <p className="text-sm text-gray-400">{showtime}</p>
                 <p className="text-sm text-gray-400">
                   {selectedSeats.length} seat(s):{" "}
