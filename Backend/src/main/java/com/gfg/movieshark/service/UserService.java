@@ -2,6 +2,7 @@ package com.gfg.movieshark.service;
 
 
 import com.gfg.movieshark.domain.User;
+import com.gfg.movieshark.enums.Role;
 import com.gfg.movieshark.repository.UserRepository;
 import com.gfg.movieshark.resource.UserResource;
 import lombok.extern.slf4j.Slf4j;
@@ -35,7 +36,9 @@ public class UserService {
         String encodedPassword = encoder.encode(user.getPassword());
         log.info("Encoded password: {}", encodedPassword);
         user.setPassword(encodedPassword);
+        user.setRole(Role.USER);
         userRepository.save(user);
+
 
         log.info("Added New User"+user.toString());
 

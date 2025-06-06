@@ -1,0 +1,86 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* @custom-variant dark (&:is(.dark *)); */
+
+@layer base {
+  :root {
+    --background: 220 20% 10%;
+    --foreground: 0 0% 95%;
+
+    --card: 224 20% 12%;
+    --card-foreground: 0 0% 95%;
+
+    --popover: 224 20% 12%;
+    --popover-foreground: 0 0% 95%;
+
+    --primary: 0 80% 50%;
+    --primary-foreground: 0 0% 100%;
+
+    --secondary: 45 100% 50%;
+    --secondary-foreground: 224 30% 12%;
+
+    --muted: 220 10% 20%;
+    --muted-foreground: 220 10% 70%;
+
+    --accent: 220 20% 18%;
+    --accent-foreground: 0 0% 95%;
+
+    --destructive: 0 80% 45%;
+    --destructive-foreground: 0 0% 100%;
+
+    --border: 220 20% 20%;
+    --input: 220 20% 20%;
+    --ring: 45 100% 50%;
+
+    --radius: 0.75rem;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-cinema-dark text-foreground;
+  }
+
+  h1,
+  h2,
+  h3,
+  h4 {
+    @apply font-bold tracking-tighter;
+  }
+
+  h1 {
+    @apply text-4xl md:text-5xl lg:text-6xl;
+  }
+
+  h2 {
+    @apply text-3xl md:text-4xl;
+  }
+
+  h3 {
+    @apply text-2xl md:text-3xl;
+  }
+}
+
+@layer components {
+  .movie-card {
+    @apply relative overflow-hidden rounded-lg transition-all duration-300 hover:shadow-xl hover:shadow-cinema-red/20;
+  }
+
+  .movie-card-overlay {
+    @apply absolute inset-0 bg-gradient-to-t from-black/80 to-transparent opacity-0 transition-opacity duration-300 group-hover:opacity-100;
+  }
+
+  .hero-gradient {
+    @apply bg-gradient-to-b from-transparent to-cinema-dark;
+  }
+
+  .section-heading {
+    @apply flex items-center gap-2 text-2xl font-bold text-cinema-light before:h-6 before:w-1 before:bg-cinema-red;
+  }
+}
